@@ -114,5 +114,5 @@ class Command(BaseCommand):
         outof = int(options.get('outof') or 1)
         name_filter = str(options.get('filter') or '')
 
-        acquire_lock('async_flush_queue%s' % which)(
+        acquire_lock('async_flush_queue%s_%s' % which % name_filter)(
             run_queue)(which, outof, jobs_limit, name_filter)
