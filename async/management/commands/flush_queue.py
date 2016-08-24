@@ -10,6 +10,7 @@ except ImportError: # pragma: no cover
     from datetime import datetime as timezone
 from optparse import make_option
 from lockfile import FileLock, AlreadyLocked
+import os
 
 from async.models import Job
 
@@ -36,6 +37,25 @@ def acquire_lock(lockname):
         return handle
     return decorator
 
+def get_fairness_items(location):
+    if not os.path.isfile(location):
+        return []
+
+    f = file(location, 'rw')
+    lines = f.read()
+    f.close()
+    return filter(bool, lines.split(","))
+
+def add_fairness_items(location, item):
+    if item is None:
+        return
+    f = file(location, 'a')
+    lines = f.write(",%s" % item)
+    f.close()
+
+def clear_fairness_items(location):
+    f = file(location, 'w')
+    f.close()
 
 def run_queue(which, outof, limit, name_filter):
     """
@@ -44,6 +64,7 @@ def run_queue(which, outof, limit, name_filter):
         This implementation is pretty ugly, but does behave in the
         right way.
     """
+    location = 'last_processed_items_%s_%s_%s.dat' % (which, outof, name_filter)
     for _ in xrange(limit):
         now = timezone.now()
         def run(jobs):
@@ -55,30 +76,39 @@ def run_queue(which, outof, limit, name_filter):
                             job.group.final.pk == job.pk):
                         if not job.group.has_completed(job):
                             continue
-                    print "%s: %s" % (job.id, unicode(job))
+                    print "%s: %s: %s" % (job.id, unicode(job), job.fairness)
+                    add_fairness_items(location, job.fairness)
                     job.execute()
                     return False
             return True
+        fairness_items = get_fairness_items(location)
         by_priority = by_priority_filter = (Job.objects
             .filter(executed=None, cancelled=None,
                 name__startswith=name_filter)
             .exclude(scheduled__gt=now)
+            .exclude(fairness__in=fairness_items)
             .order_by('-priority'))
         while True:
             try:
                 priority = by_priority[0].priority
             except IndexError:
+                clear_fairness_items(location)
+                #If we had some fairness filter, try again after clearing the filter.
+                if fairness_items:
+                    break
                 print "No jobs to execute"
                 return
             if run(Job.objects
                     .filter(executed=None, cancelled=None,
                         scheduled__lte=now, priority=priority,
                         name__startswith=name_filter)
+                    .exclude(fairness__in=fairness_items)
                     .order_by('scheduled', 'id')):
                 if run(Job.objects
                         .filter(executed=None, cancelled=None,
                             scheduled=None, priority=priority,
                             name__startswith=name_filter)
+                        .exclude(fairness__in=fairness_items)
                         .order_by('id')):
                     by_priority = by_priority_filter.filter(
                         priority__lt=priority)
@@ -114,5 +144,5 @@ class Command(BaseCommand):
         outof = int(options.get('outof') or 1)
         name_filter = str(options.get('filter') or '')
 
-        acquire_lock('async_flush_queue%s_%s' % which % name_filter)(
+        acquire_lock('async_flush_queue%s_%s' % (which, name_filter))(
             run_queue)(which, outof, jobs_limit, name_filter)

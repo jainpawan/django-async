@@ -26,7 +26,7 @@ def _get_now():
 
 
 def schedule(function, args=None, kwargs=None,
-        priority=5, run_after=None, group=None, meta=None):
+        priority=5, run_after=None, group=None, meta=None, fairness=None):
     """Schedule a tast for execution.
     """
     # Too many arguments
@@ -43,7 +43,8 @@ def schedule(function, args=None, kwargs=None,
             args=dumps(args or []), kwargs=dumps(kwargs or {}),
         meta=dumps(meta or {}), scheduled=run_after,
         priority=priority,
-        group=expected_group)
+        group=expected_group,
+        fairness=fairness)
     job.save()
     return job
 
