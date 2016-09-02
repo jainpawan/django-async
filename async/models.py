@@ -179,6 +179,9 @@ class Job(models.Model):
             _logger.info("%s %s", self.id, unicode(self))
             args = loads(self.args)
             kwargs = non_unicode_kwarg_keys(loads(self.kwargs))
+            #Add priority and fairness to kwargs.
+            kwargs['priority'] = self.priority
+            kwargs['fairness'] = self.fairness
             function = object_at_end_of_path(self.name)
             _logger.debug(u"%s resolved to %s" % (self.name, function))
             def execute():
