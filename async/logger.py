@@ -2,5 +2,6 @@
     Django Async logger.
 """
 #pylint: disable=unused-import
-import logging as _logger
+import logging
+_logger = logging.getLogger('async_logger')
 

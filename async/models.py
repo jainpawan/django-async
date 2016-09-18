@@ -202,8 +202,10 @@ class Job(models.Model):
             self.priority = self.priority - 1
             _logger.error(
                 "Job failed. Rescheduled for %s after %s error(s). "
-                    "New priority is %s",
-                self.scheduled, errors, self.priority)
+                    "New priority is %s."
+                    "Exception is %s."
+                    "Trace is %s",
+                self.scheduled, errors, self.priority, repr(exception), format_exc())
             def record():
                 """Local function allows us to wrap these updates into a
                 transaction.
