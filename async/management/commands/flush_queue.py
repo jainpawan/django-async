@@ -86,6 +86,7 @@ def run_queue(which, outof, limit, name_filter):
             .filter(executed=None, cancelled=None,
                 name__startswith=name_filter)
             .exclude(scheduled__gt=now)
+            .exclude(priority__lt=-20)
             .exclude(fairness__in=fairness_items)
             .order_by('-priority'))
         while True:
