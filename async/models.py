@@ -147,7 +147,7 @@ class Job(models.Model):
 
     group = models.ForeignKey(Group, related_name='jobs',
         null=True, blank=True)
-    fairness = models.IntegerField(null=True, blank=True)
+    fairness = models.IntegerField(default=-1, null=True, blank=True)
     def __unicode__(self):
         # __unicode__: Instance of 'bool' has no 'items' member
         # pylint: disable=E1103
