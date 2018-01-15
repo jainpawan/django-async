@@ -124,6 +124,40 @@ class Group(models.Model):
             group = Group.objects.create(reference=reference)
         return group
 
+class JobArchive(models.Model):
+    job_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100, blank=False)
+    args = models.TextField()
+    kwargs = models.TextField()
+    meta = models.TextField()
+    result = models.TextField(blank=True)
+
+    priority = models.IntegerField()
+    identity = models.CharField(max_length=100, blank=False, db_index=True)
+
+    added = models.DateTimeField(null=True, blank=True,)
+    scheduled = models.DateTimeField(null=True, blank=True,
+        help_text="If not set, will be executed ASAP")
+    started = models.DateTimeField(null=True, blank=True)
+    executed = models.DateTimeField(null=True, blank=True)
+    cancelled = models.DateTimeField(null=True, blank=True)
+
+    fairness = models.IntegerField(null=True, blank=True)
+
+class ErrorArchive(models.Model):
+    """
+        Recorded when an error happens during execution of a job.
+    """
+    error_id = models.IntegerField(primary_key=True)
+    job = models.ForeignKey(JobArchive, related_name='errors')
+    executed = models.DateTimeField(auto_now_add=True)
+    exception = models.TextField()
+    traceback = models.TextField()
+
+    def __unicode__(self):
+        return u'%s : %s' % (self.executed, self.exception)
+
+
 
 class Job(models.Model):
     """

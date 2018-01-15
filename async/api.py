@@ -16,8 +16,9 @@ except ImportError: # pragma: no cover
     from datetime import datetime as timezone
 
 from async.models import Error, Job, Group
+from async.models import ErrorArchive, JobArchive
 from async.utils import full_name
-
+from time import sleep
 
 def _get_now():
     """Get today datetime, testing purpose.
@@ -70,6 +71,54 @@ def health():
     output['queue']['executed'] = Job.objects.exclude(executed=None).count()
     output['errors']['number'] = Error.objects.all().count()
     return output
+
+def archive_old_jobs(archive_jobs_before_days=7):
+    archive_jobs_before_dt = _get_now() - timedelta(
+        days=archive_jobs_before_days)
+
+    archive_job = (Q(executed__isnull=False) &
+        Q(executed__lt=archive_jobs_before_dt)) | \
+             (Q(cancelled__isnull=False) &
+        Q(cancelled__lt=archive_jobs_before_dt))
+    batch_size = 5000
+    more_jobs_to_be_archived = True
+    counter = 1
+    while more_jobs_to_be_archived:
+        print 'archiving jobs...', counter*batch_size
+        sleep(5)
+        counter += 1
+        to_be_archived_jobs = Job.objects.filter(Q(group__isnull=True), archive_job)
+        if to_be_archived_jobs.count() > batch_size:
+            to_be_archived_jobs = to_be_archived_jobs[:batch_size]
+            more_jobs_to_be_archived = True
+        else:
+            more_jobs_to_be_archived = False
+
+        for job in to_be_archived_jobs:
+            print 'archiving job...', job
+            #Copy finished jobs and errors here.
+            archived_job = JobArchive(
+                job_id=job.id, name=job.name,
+                args=job.args, kwargs=job.kwargs,
+                meta=job.meta, result=job.result,
+                priority=job.priority, identity=job.identity,
+                added=job.added,scheduled=job.scheduled,
+                started=job.started, executed=job.executed,
+                cancelled=job.cancelled, fairness=job.fairness)
+            archived_job.save()
+            errors = job.errors.all()
+            if errors:
+                for error in errors:
+                    archived_error = ErrorArchive(
+                        error_id = error.id,
+                        job=archived_job,
+                        executed=error.executed,
+                        exception=error.exception,
+                        traceback=error.traceback)
+                    archived_error.save()
+                errors.delete()
+            delete_ids = [_.id for _ in to_be_archived_jobs]
+        Job.objects.filter(id__in=delete_ids).delete()
 
 
 def remove_old_jobs(remove_jobs_before_days=30, resched_hours=8):
