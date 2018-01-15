@@ -80,7 +80,7 @@ def archive_old_jobs(archive_jobs_before_days=7):
         Q(executed__lt=archive_jobs_before_dt)) | \
              (Q(cancelled__isnull=False) &
         Q(cancelled__lt=archive_jobs_before_dt))
-    batch_size = 5000
+    batch_size = 50
     more_jobs_to_be_archived = True
     counter = 1
     while more_jobs_to_be_archived:
@@ -90,12 +90,12 @@ def archive_old_jobs(archive_jobs_before_days=7):
         to_be_archived_jobs = Job.objects.filter(Q(group__isnull=True), archive_job)
         if to_be_archived_jobs.count() > batch_size:
             to_be_archived_jobs = to_be_archived_jobs[:batch_size]
-            more_jobs_to_be_archived = True
+            more_jobs_to_be_archived = False
         else:
             more_jobs_to_be_archived = False
 
         for job in to_be_archived_jobs:
-            print 'archiving job...', job
+            print 'archiving job...', job.id
             #Copy finished jobs and errors here.
             archived_job = JobArchive(
                 job_id=job.id, name=job.name,
@@ -116,9 +116,10 @@ def archive_old_jobs(archive_jobs_before_days=7):
                         exception=error.exception,
                         traceback=error.traceback)
                     archived_error.save()
-                errors.delete()
-            delete_ids = [_.id for _ in to_be_archived_jobs]
-        Job.objects.filter(id__in=delete_ids).delete()
+                #errors.delete()
+        delete_ids = [_.id for _ in to_be_archived_jobs]
+        print 'deleting...', delete_ids
+        #Job.objects.filter(id__in=delete_ids).delete()
 
 
 def remove_old_jobs(remove_jobs_before_days=30, resched_hours=8):
