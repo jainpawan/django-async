@@ -117,10 +117,10 @@ def archive_old_jobs(archive_jobs_before_days=7):
                         exception=error.exception,
                         traceback=error.traceback)
                     archived_error.save()
-                #errors.delete()
+                errors.delete()
         delete_ids = [_.id for _ in to_be_archived_jobs]
-        print 'deleting...', delete_ids
-        #Job.objects.filter(id__in=delete_ids).delete()
+        print 'deleting...', len(delete_ids), delete_ids[0], delete_ids[-1]
+        Job.objects.filter(id__in=delete_ids).delete()
 
 
 def remove_old_jobs(remove_jobs_before_days=30, resched_hours=8):
