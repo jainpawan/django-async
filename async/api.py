@@ -80,17 +80,18 @@ def archive_old_jobs(archive_jobs_before_days=7):
         Q(executed__lt=archive_jobs_before_dt)) | \
              (Q(cancelled__isnull=False) &
         Q(cancelled__lt=archive_jobs_before_dt))
-    batch_size = 50
+    batch_size = 1000
     more_jobs_to_be_archived = True
     counter = 1
-    while more_jobs_to_be_archived:
+    max_counter = 20
+    while more_jobs_to_be_archived and counter < max_counter:
         print 'archiving jobs...', counter*batch_size
         sleep(5)
         counter += 1
         to_be_archived_jobs = Job.objects.filter(Q(group__isnull=True), archive_job)
         if to_be_archived_jobs.count() > batch_size:
             to_be_archived_jobs = to_be_archived_jobs[:batch_size]
-            more_jobs_to_be_archived = False
+            more_jobs_to_be_archived = True
         else:
             more_jobs_to_be_archived = False
 
