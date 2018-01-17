@@ -83,7 +83,7 @@ def archive_old_jobs(archive_jobs_before_days=7):
     batch_size = 1000
     more_jobs_to_be_archived = True
     counter = 1
-    max_counter = 20
+    max_counter = 30
     while more_jobs_to_be_archived and counter < max_counter:
         print 'archiving jobs...', counter*batch_size
         sleep(5)
