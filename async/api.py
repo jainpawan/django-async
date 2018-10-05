@@ -41,7 +41,7 @@ def schedule(function, args=None, kwargs=None,
         expected_group = None
     job = Job(
         name=full_name(function),
-            args=dumps(args or []), kwargs=dumps(kwargs or {}, sort_keys=True),
+            args=dumps(args or [], separators=(',', ':')), kwargs=dumps(kwargs or {}, sort_keys=True, separators=(',', ':')),
         meta=dumps(meta or {}), scheduled=run_after,
         priority=priority,
         group=expected_group,
@@ -55,7 +55,7 @@ def deschedule(function, args=None, kwargs=None):
     """
     job = Job(
         name=full_name(function),
-            args=dumps(args or []), kwargs=dumps(kwargs or {}, sort_keys=True))
+            args=dumps(args or [], separators=(',', ':')), kwargs=dumps(kwargs or {}, sort_keys=True, separators=(',', ':')))
     mark_cancelled = Job.objects.filter(executed=None,
         identity=sha1(unicode(job)).hexdigest()).filter(
         name=job.name,args=job.args, kwargs=job.kwargs)
