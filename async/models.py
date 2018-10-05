@@ -184,10 +184,8 @@ class Job(models.Model):
     fairness = models.IntegerField(default=-1, null=True, blank=True)
     def __unicode__(self):
         # __unicode__: Instance of 'bool' has no 'items' member
-        # pylint: disable=E1103
-        args = ', '.join([repr(s) for s in loads(self.args)] +
-            ['%s=%s' % (k, repr(v)) for k, v in loads(self.kwargs).items()])
-        return u'%s(%s)' % (self.name, args)
+        # pylint: disable=E1103 
+        return u'%s(%s;%s)' % (self.name, self.args, self.kwargs)
 
     def save(self, *a, **kw):
         # Stop us from cheating by adding the new jobs to the old group.
