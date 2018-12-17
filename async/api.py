@@ -83,7 +83,7 @@ def archive_old_jobs(archive_jobs_before_days=7):
     batch_size = 1000
     more_jobs_to_be_archived = True
     counter = 1
-    max_counter = 30
+    max_counter = 100
     while more_jobs_to_be_archived and counter < max_counter:
         print 'archiving jobs...', counter*batch_size
         sleep(5)
@@ -94,7 +94,7 @@ def archive_old_jobs(archive_jobs_before_days=7):
             more_jobs_to_be_archived = True
         else:
             more_jobs_to_be_archived = False
-
+        bulk_create_batch = []
         for job in to_be_archived_jobs:
             print 'archiving job...', job.id
             #Copy finished jobs and errors here.
@@ -106,9 +106,9 @@ def archive_old_jobs(archive_jobs_before_days=7):
                 added=job.added,scheduled=job.scheduled,
                 started=job.started, executed=job.executed,
                 cancelled=job.cancelled, fairness=job.fairness)
-            archived_job.save()
             errors = job.errors.all()
             if errors:
+                archived_job.save()
                 for error in errors:
                     archived_error = ErrorArchive(
                         error_id = error.id,
@@ -118,6 +118,9 @@ def archive_old_jobs(archive_jobs_before_days=7):
                         traceback=error.traceback)
                     archived_error.save()
                 errors.delete()
+            else:
+                bulk_create_batch.append(archived_job)
+        JobArchive.objects.bulk_create(bulk_create_batch)
         delete_ids = [_.id for _ in to_be_archived_jobs]
         print 'deleting...', len(delete_ids), delete_ids[0], delete_ids[-1]
         Job.objects.filter(id__in=delete_ids).delete()

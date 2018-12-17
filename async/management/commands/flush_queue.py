@@ -41,7 +41,7 @@ def get_fairness_items(location):
     if not os.path.isfile(location):
         return []
 
-    f = file(location, 'rw')
+    f = file(location, 'r+')
     lines = f.read()
     f.close()
     return filter(bool, lines.split(","))
