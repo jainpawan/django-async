@@ -1,7 +1,7 @@
 """
     Django Async management commands.
 """
-from django.core.management.base import BaseCommand
+from async.command_stats import StatBaseCommand
 try:
     # No name 'timezone' in module 'django.utils'
     # pylint: disable=E0611
@@ -119,12 +119,12 @@ def run_queue(which, outof, limit, name_filter):
                 break
 
 
-class Command(BaseCommand):
+class Command(StatBaseCommand):
     """
         Invoke using:
             python manage.py flush_queue
     """
-    option_list = BaseCommand.option_list + (
+    option_list = StatBaseCommand.option_list + (
         make_option('--jobs', '-j', dest='jobs',
             help='The maximum number of jobs to run'),
         make_option('--which', '-w', dest='which',
