@@ -32,7 +32,7 @@ class StatBaseCommand(BaseCommand):
         """
         parser = self.create_parser(argv[0], argv[1])
         options, args = parser.parse_args(argv[2:])
-        self.command = options.get('filter')
+        self.command = options.filter
         super(StatBaseCommand, self).run_from_argv(argv)
 
     def execute(self, *args, **options):
