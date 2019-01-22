@@ -19,6 +19,14 @@ class StatBaseCommand(BaseCommand):
         except Exception:
             return socket.gethostbyname(socket.gethostname())
 
+    def _schedule_deschedule_stats(self, transaction_type):
+        self.end_time = time.time()
+        metric = "django_async.{},host={},transaction_type={}".format(
+            self.command, self.get_machine_host(), transaction_type
+        )
+        ms = (self.end_time - self.start_time) * 1000
+        statsd.timing(metric, ms)
+
     def _stats(self, success=True):
         self.end_time = time.time()
         metric = "django_async.{},host={},success={}".format(
@@ -100,3 +108,12 @@ class StatBaseCommand(BaseCommand):
             sys.exit(1)
         if saved_lang is not None:
             translation.activate(saved_lang)
+
+def push_statsd(func):
+    # This function is what we "replace" hello with
+    def wrapper(*args, **kwargs):
+        sbc = StatBaseCommand()
+        sbc.command = args[0]
+        func(*args, **kw)
+        sbc._schedule_deschedule_stats(func.func_name)
+    return wrapper

@@ -1,12 +1,22 @@
 """
     Django manage.py command to archive old jobs
 """
-from django.core.management.base import BaseCommand
+from async.command_stats import StatBaseCommand
 
 from async.api import archive_old_jobs
 
 
-class Command(BaseCommand):
+class Command(StatBaseCommand):
+    option_list = StatBaseCommand.option_list + (
+        optparse.make_option(
+            '--before_days',
+            action='store',
+            dest='before_days',
+            help='before_days'
+        ),
+    )
+    help = 'Does a single pass over the asynchronous queue'
+
     """
         Invoke using:
             python manage.py queue_health
@@ -16,5 +26,6 @@ class Command(BaseCommand):
     def handle(self, **options):
         """Command implementation.
         """
-        print archive_old_jobs(7)
+        before_days = options.get('before_days')
+        print archive_old_jobs(int(before_days))
 

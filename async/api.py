@@ -18,6 +18,7 @@ except ImportError: # pragma: no cover
 from async.models import Error, Job, Group
 from async.models import ErrorArchive, JobArchive
 from async.utils import full_name
+from async.command_stats import push_statsd
 from time import sleep
 
 def _get_now():
@@ -25,7 +26,7 @@ def _get_now():
     """
     return timezone.now()
 
-
+@push_statsd
 def schedule(function, args=None, kwargs=None,
         priority=5, run_after=None, group=None, meta=None, fairness=None):
     """Schedule a tast for execution.
@@ -49,7 +50,7 @@ def schedule(function, args=None, kwargs=None,
     job.save()
     return job
 
-
+@push_statsd
 def deschedule(function, args=None, kwargs=None):
     """Remove any instances of the job from the queue.
     """
