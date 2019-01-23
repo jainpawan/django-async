@@ -114,6 +114,6 @@ def push_statsd(func):
     def wrapper(*args, **kwargs):
         sbc = StatBaseCommand()
         sbc.command = args[0]
-        func(*args, **kw)
+        func(*args, **kwargs)
         sbc._schedule_deschedule_stats(func.func_name)
     return wrapper
