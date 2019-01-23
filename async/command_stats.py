@@ -111,7 +111,7 @@ class StatBaseCommand(BaseCommand):
 
 def push_statsd(func):
     # This function is what we "replace" hello with
-    def wrapper(function, args, **kwargs):
+    def wrapper(function, *args, **kwargs):
         sbc = StatBaseCommand()
         sbc.command = function
         job = func(function, *args, **kwargs)
