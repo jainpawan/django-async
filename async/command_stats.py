@@ -111,9 +111,10 @@ class StatBaseCommand(BaseCommand):
 
 def push_statsd(func):
     # This function is what we "replace" hello with
-    def wrapper(*args, **kwargs):
+    def wrapper(function, args, **kwargs):
         sbc = StatBaseCommand()
-        sbc.command = args[0]
-        func(*args, **kwargs)
+        sbc.command = function
+        job = func(function, *args, **kwargs)
         sbc._schedule_deschedule_stats(func.func_name)
+        return job
     return wrapper
