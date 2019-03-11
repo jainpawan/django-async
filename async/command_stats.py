@@ -21,16 +21,16 @@ class StatBaseCommand(BaseCommand):
 
     def _schedule_deschedule_stats(self, transaction_type):
         self.end_time = time.time()
-        metric = "django_async.{},host={},transaction_type={}".format(
+        metric = "django_async_scheduling_{}.{},host={},transaction_type={}".format(
             self.command, self.get_machine_host(), transaction_type
         )
         ms = (self.end_time - self.start_time) * 1000
         statsd.timing(metric, ms)
 
-    def _stats(self, success=True):
+    def _stats(self, success=True, stats_type="run"):
         self.end_time = time.time()
-        metric = "django_async.{},host={},success={}".format(
-            self.command, self.get_machine_host(), success)
+        metric = "django_async_{}.{},host={},success={}".format(
+            stats_type, self.command, self.get_machine_host(), success)
         ms = (self.end_time - self.start_time) * 1000
         statsd.timing(metric, ms)
 
@@ -51,63 +51,11 @@ class StatBaseCommand(BaseCommand):
         ``CommandError``, intercept it and print it sensibly to
         stderr.
         """
-
-        show_traceback = options.get('traceback', False)
-
-        # Switch to English, because django-admin.py creates database content
-        # like permissions, and those shouldn't contain any translations.
-        # But only do this if we can assume we have a working settings file,
-        # because django.utils.translation requires settings.
-        saved_lang = None
-        if self.can_import_settings:
-            try:
-                from django.utils import translation
-                saved_lang = translation.get_language()
-                translation.activate('en-us')
-            except ImportError, e:
-                # If settings should be available, but aren't,
-                # raise the error and quit.
-                if show_traceback:
-                    traceback.print_exc()
-                else:
-                    sys.stderr.write(smart_str(
-                        self.style.ERROR('Error: %s\n' % e)))
-                sys.exit(1)
-
         try:
-            self.stdout = options.get('stdout', sys.stdout)
-            self.stderr = options.get('stderr', sys.stderr)
-            if self.requires_model_validation:
-                self.validate()
-            output = self.handle(*args, **options)
-            if output:
-                if self.output_transaction:
-                    # This needs to be imported here, because it relies on
-                    # settings.
-                    from django.db import connections, DEFAULT_DB_ALIAS
-                    connection = connections[options.get(
-                        'database', DEFAULT_DB_ALIAS)]
-                    if connection.ops.start_transaction_sql():
-                        self.stdout.write(
-                            self.style.SQL_KEYWORD(
-                                connection.ops.start_transaction_sql()
-                            ) + '\n'
-                        )
-                self.stdout.write(output)
-                if self.output_transaction:
-                    self.stdout.write(
-                        '\n' + self.style.SQL_KEYWORD("COMMIT;") + '\n')
+            super(StatBaseCommand, self).execute(*args, **options)
             self._stats()
-        except CommandError, e:
-            if show_traceback:
-                traceback.print_exc()
-            else:
-                self.stderr.write(
-                    smart_str(self.style.ERROR('Error: %s\n' % e)))
+        except Exception:
             self._stats(success=False)
-            sys.exit(1)
-        if saved_lang is not None:
-            translation.activate(saved_lang)
 
 def push_statsd(func):
     # This function is what we "replace" hello with

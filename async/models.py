@@ -18,7 +18,7 @@ from traceback import format_exc
 
 from async.logger import _logger
 from async.utils import object_at_end_of_path, non_unicode_kwarg_keys
-
+from async.command_stats import StatBaseCommand
 from django.core.exceptions import ValidationError
 
 
@@ -209,6 +209,8 @@ class Job(models.Model):
             Run the job using the specified meta values to control the
             execution.
         """
+        sbc = StatBaseCommand()
+        sbc.command = self.name
         try:
             _logger.info("%s %s", self.id, unicode(self))
             args = loads(self.args)
@@ -226,6 +228,7 @@ class Job(models.Model):
                 self.executed = timezone.now()
                 self.result = dumps(result)
                 self.save()
+                sbc._stats(success=True, stats_type="execute")
                 return result
             return transaction.commit_on_success(execute)()
         except Exception, exception:
@@ -248,6 +251,7 @@ class Job(models.Model):
                     traceback=format_exc())
                 self.save()
             transaction.commit_on_success(record)()
+            sbc._stats(success=False, stats_type="execute")
             raise
 
 
