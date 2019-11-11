@@ -13,6 +13,7 @@ from lockfile import FileLock, AlreadyLocked
 import os
 
 from async.models import Job
+from django.db.models import Q
 
 
 def acquire_lock(lockname):
@@ -82,10 +83,13 @@ def run_queue(which, outof, limit, name_filter):
                     return False
             return True
         fairness_items = get_fairness_items(location)
-        by_priority = by_priority_filter = (Job.objects
-            .filter(executed=None, cancelled=None,
-                name__startswith=name_filter)
-            .exclude(scheduled__gt=now)
+        candiates_qs = Job.objects.filter(executed=None, cancelled=None)
+        if name_filter:
+            nq = Q()
+            for name in name_filter.split(','):
+                nq |= Q(name__startswith=name)
+            candiates_qs = candiates_qs.filter(nq)
+        by_priority = by_priority_filter = (candiates_qs.exclude(scheduled__gt=now)
             .exclude(priority__lt=-20)
             .exclude(fairness__in=fairness_items)
             .order_by('-priority'))
@@ -99,16 +103,10 @@ def run_queue(which, outof, limit, name_filter):
                     break
                 print "No jobs to execute"
                 return
-            if run(Job.objects
-                    .filter(executed=None, cancelled=None,
-                        scheduled__lte=now, priority=priority,
-                        name__startswith=name_filter)
+            if run(candiates_qs.filter(scheduled__lte=now, priority=priority)
                     .exclude(fairness__in=fairness_items)
                     .order_by('scheduled', 'id')):
-                if run(Job.objects
-                        .filter(executed=None, cancelled=None,
-                            scheduled=None, priority=priority,
-                            name__startswith=name_filter)
+                if run(candiates_qs.filter(scheduled=None, priority=priority)
                         .exclude(fairness__in=fairness_items)
                         .order_by('id')):
                     by_priority = by_priority_filter.filter(
