@@ -21,7 +21,7 @@ class StatBaseCommand(BaseCommand):
 
     def _schedule_deschedule_stats(self, transaction_type):
         self.end_time = time.time()
-        metric = "django_async_scheduling_{}.{},host={},transaction_type={}".format(
+        metric = "django_async_scheduling_{},host={},transaction_type={}".format(
             self.command, self.get_machine_host(), transaction_type
         )
         ms = (self.end_time - self.start_time) * 1000
