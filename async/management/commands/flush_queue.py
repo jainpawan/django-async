@@ -16,7 +16,15 @@ from async.models import Job
 from django.db.models import Q
 
 
-def acquire_lock(lockname):
+def release_locks(locks):
+    for l in reversed(locks):
+        try:
+            l.release()
+        except e:
+            print e
+            print "Error trying to release lock:", l
+
+def acquire_lock(prefix, filter):
     """Return a decorator for the given lock name
     """
     def decorator(handler):
@@ -25,16 +33,22 @@ def acquire_lock(lockname):
         def handle(*args):
             """Acquire the lock before running the method.
             """
-            lock = FileLock(lockname)
-            try:
-                lock.acquire(timeout=-1)
-            except AlreadyLocked: # pragma: no cover
-                print 'Lock is already set, aborting.'
-                return
+            names = filter.split(',')
+            locknames = [prefix + _ for _ in names]
+            acquired_locks = []
+            for l in locknames:
+                lock = FileLock(l)
+                try:
+                    lock.acquire(timeout=-1)
+                    acquired_locks.append(lock)
+                except AlreadyLocked: # pragma: no cover
+                    print 'Lock is already set, aborting:', l
+                    release_locks(acquired_locks)
+                    return
             try:
                 handler(*args)
             finally:
-                lock.release()
+                release_locks(acquired_locks)
         return handle
     return decorator
 
@@ -143,5 +157,5 @@ class Command(StatBaseCommand):
         outof = int(options.get('outof') or 1)
         name_filter = str(options.get('filter') or '')
 
-        acquire_lock('async_flush_queue%s_%s' % (which, name_filter))(
+        acquire_lock('async_flush_queue%s' % (which), name_filter)(
             run_queue)(which, outof, jobs_limit, name_filter)
