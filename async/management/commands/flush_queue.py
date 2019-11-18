@@ -11,6 +11,7 @@ except ImportError: # pragma: no cover
 from optparse import make_option
 from lockfile import FileLock, AlreadyLocked
 import os
+import md5
 
 from async.models import Job
 from django.db.models import Q
@@ -79,7 +80,7 @@ def run_queue(which, outof, limit, name_filter):
         This implementation is pretty ugly, but does behave in the
         right way.
     """
-    location = 'last_processed_items_%s_%s_%s.dat' % (which, outof, name_filter)
+    location = 'last_processed_items_%s_%s_%s.dat' % (which, outof, md5.new(name_filter).hexdigest())
     for _ in xrange(limit):
         now = timezone.now()
         def run(jobs):
