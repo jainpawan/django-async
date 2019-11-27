@@ -73,7 +73,7 @@ def clear_fairness_items(location):
     f = file(location, 'w')
     f.close()
 
-def run_queue(which, outof, limit, name_filter):
+def run_queue(which, outof, limit, name_filter, min_priority):
     """
         Code that actually executes the jobs in the queue.
 
@@ -105,7 +105,7 @@ def run_queue(which, outof, limit, name_filter):
                 nq |= Q(name__startswith=name)
             candiates_qs = candiates_qs.filter(nq)
         by_priority = by_priority_filter = (candiates_qs.exclude(scheduled__gt=now)
-            .exclude(priority__lt=-20)
+            .exclude(priority__lt=min_priority)
             .exclude(fairness__in=fairness_items)
             .order_by('-priority'))
         while True:
@@ -146,6 +146,8 @@ class Command(StatBaseCommand):
             help='How many workers there are'),
         make_option('--filter', '-f', dest='filter',
             help='Filter jobs by fully qualified name'),
+        make_option('--min_priority', '-pa', dest='min_priority',
+            help='pick jobs with priority greater than min_priority'),
     )
     help = 'Does a single pass over the asynchronous queue'
 
@@ -157,6 +159,6 @@ class Command(StatBaseCommand):
         which = int(options.get('which') or 0)
         outof = int(options.get('outof') or 1)
         name_filter = str(options.get('filter') or '')
-
+        min_priority = int(options.get('min_priority') or -21)
         acquire_lock('async_flush_queue%s' % (which), name_filter)(
-            run_queue)(which, outof, jobs_limit, name_filter)
+            run_queue)(which, outof, jobs_limit, name_filter, min_priority)
