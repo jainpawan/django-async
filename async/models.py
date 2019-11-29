@@ -21,6 +21,7 @@ from async.utils import object_at_end_of_path, non_unicode_kwarg_keys
 from async.command_stats import StatBaseCommand
 from django.core.exceptions import ValidationError
 
+from raven.contrib.django.models import get_client
 
 class Group(models.Model):
     """
@@ -243,6 +244,17 @@ class Job(models.Model):
                     "Exception is %s."
                     "Trace is %s",
                 self.id, self.scheduled, errors, self.priority, repr(exception), format_exc())
+            try:
+                info = {
+                    'job' : self.id,
+                    'num_errors' : errors,
+                    'new_priority': self.priority
+                }
+                c = get_client()
+                if c:
+                    c.captureException(extra=info)
+            except:
+                print "Unable to send sentry error. Check Sentry config."
             def record():
                 """Local function allows us to wrap these updates into a
                 transaction.
