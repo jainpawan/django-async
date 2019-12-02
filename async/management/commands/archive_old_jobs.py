@@ -2,7 +2,7 @@
     Django manage.py command to archive old jobs
 """
 from async.command_stats import StatBaseCommand
-
+import optparse
 from async.api import archive_old_jobs
 
 

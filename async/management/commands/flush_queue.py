@@ -21,7 +21,7 @@ def release_locks(locks):
     for l in reversed(locks):
         try:
             l.release()
-        except e:
+        except Exception as e:
             print e
             print "Error trying to release lock:", l
 
