@@ -146,7 +146,7 @@ class Command(StatBaseCommand):
             help='How many workers there are'),
         make_option('--filter', '-f', dest='filter',
             help='Filter jobs by fully qualified name'),
-        make_option('--min_priority', '-pa', dest='min_priority',
+        make_option('--min_priority', '-p', dest='min_priority',
             help='pick jobs with priority greater than min_priority'),
     )
     help = 'Does a single pass over the asynchronous queue'
