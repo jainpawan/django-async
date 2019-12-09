@@ -40,7 +40,10 @@ class StatBaseCommand(BaseCommand):
         """
         parser = self.create_parser(argv[0], argv[1])
         options, args = parser.parse_args(argv[2:])
-        self.command = options.filter
+        if hasattr(options,'filter'):
+            self.command = options.filter
+        else:
+            self.command = argv[1]
         super(StatBaseCommand, self).run_from_argv(argv)
 
     def execute(self, *args, **options):
