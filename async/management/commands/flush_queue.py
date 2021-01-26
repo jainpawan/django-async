@@ -45,7 +45,7 @@ def acquire_lock(prefix, filter):
                 except AlreadyLocked: # pragma: no cover
                     print 'Lock is already set, aborting:', l
                     release_locks(acquired_locks)
-                    return
+                    raise Exception('Lock is already set, aborting.', l)
             try:
                 handler(*args)
             finally:
